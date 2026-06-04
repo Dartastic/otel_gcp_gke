@@ -2,7 +2,6 @@
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
 import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
-import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_gcp_gke_suppression.dart';
 
@@ -48,42 +47,52 @@ Future<T> tracedGcpGKE<T>({
   final t = tracer ?? OTel.tracerProvider().getTracer('otel_gcp_gke');
   final span = t.startSpan('gke $operation', kind: SpanKind.client);
   try {
-    span.setStringAttribute('gcp.service', 'container');
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('gcp.service', 'container')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.project != null) {
-        span.setStringAttribute('gcp.project.id', res.project!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('gcp.project.id', res.project!)]));
       }
       if (res.location != null) {
-        span.setStringAttribute('cloud.region', res.location!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('cloud.region', res.location!)]));
       }
       if (res.clusterName != null) {
-        span.setStringAttribute('k8s.cluster.name', res.clusterName!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('k8s.cluster.name', res.clusterName!)]));
       }
       if (res.nodePool != null) {
-        span.setStringAttribute('gcp.gke.node_pool', res.nodePool!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('gcp.gke.node_pool', res.nodePool!)]));
       }
       if (res.podCount != null) {
-        span.setIntAttribute('k8s.cluster.pod.count', res.podCount!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('k8s.cluster.pod.count', res.podCount!)]));
       }
       if (res.version != null) {
-        span.setStringAttribute('k8s.cluster.version', res.version!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('k8s.cluster.version', res.version!)]));
       }
       if (res.statusCode != null) {
-        span.setIntAttribute('http.response.status_code', res.statusCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
       }
       if (res.errorCode != null) {
-        span.setStringAttribute('gke.error.code', res.errorCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('gke.error.code', res.errorCode!)]));
       }
-      final fail =
-          res.errorCode != null ||
+      final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.setStringAttribute(
-          ErrorResource.errorType.key,
-          res.errorCode ?? 'gke.error',
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            ErrorResource.errorType.key,
+            res.errorCode ?? 'gke.error',
+          )
+        ]));
         span.setStatus(SpanStatusCode.Error, res.errorMessage);
       }
     }
